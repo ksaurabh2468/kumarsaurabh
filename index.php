@@ -15,11 +15,15 @@ if($_POST)
 {
 	$sevendayissues = 0;
 	$onedayissues = 0;
+	$pulls = 0;
 
 	$data = [];
 	$repository = $_POST['url'];
 	$cnt = 1;
+	$cnt2 = 1;
 	$json = get_web_json("https://api.github.com/repos/" . $repository);
+	$pulls = getpulls( $cnt2 , $repository , $pulls );
+
 	$total = $json->open_issues_count;
 	getdata($cnt , $repository , $data, $sevendayissues , $onedayissues , $total);
 	//var_dump($data2);
@@ -30,9 +34,28 @@ if($_POST)
 
 
 
+function getpulls($cnt2 , $repository , $pulls)
+{
+
+	$url = "https://api.github.com/repos/" . $repository . "/pulls?page=" .  $cnt . " &per_page=100";
+    $objs = get_web_json($url);
+
+    $pulls += count($objs);
+
+    if(count($objs)==100){
+
+    	$cnt2 += 1;
+    	getpulls($cnt2 , $repository, $pulls);
+
+    }
+    else
+    	return $pulls;
+
+}
 
 
-function getdata($cnt , $repository ,  $data , $sevendayissues , $onedayissues ,  $total){
+
+function getdata($cnt , $repository ,  $data , $sevendayissues , $onedayissues ,  $total , $pulls){
 
 	//$data = array();
 	$date = strtotime(date('Y-m-d H:i:s')) - 24*7*60*60;
@@ -53,7 +76,7 @@ function getdata($cnt , $repository ,  $data , $sevendayissues , $onedayissues ,
     if(count($objs)==30){
 
     	$cnt += 1;
-    	getdata($cnt , $repository, $data, $sevendayissues, $onedayissues , $total);
+    	getdata($cnt , $repository, $data, $sevendayissues, $onedayissues , $total , $pulls);
 
     }
     else{
@@ -79,7 +102,7 @@ function getdata($cnt , $repository ,  $data , $sevendayissues , $onedayissues ,
     		<div class="col-md-3" style="text-align:center">
     			<div style="height:150px; width:150px; background-image:url('6.GIF'); text-align:center; padding-top:40px; margin-left:60px">
     			<h2>
-    				<?php echo  $total; ?>
+    				<?php echo  ($total  - $pulls); ?>
     			</h2>
     			</div>
     			<p  style="margin-top:10px" ><b>Total Issues</b></p>
@@ -102,7 +125,7 @@ function getdata($cnt , $repository ,  $data , $sevendayissues , $onedayissues ,
     		<div class="col-md-3" style="text-align:center">
     			<div style="height:150px; width:150px; background-image:url('6.GIF'); text-align:center; padding-top:40px; margin-left:60px">
     			<h2> 
-    				<?php echo $onedayissues; ?>
+    				<?php echo ($onedayissues); ?>
     			</h2></div>
     			<p style="margin-top:10px" > <b>Till 24 Hours </b></p>
     		</div>
