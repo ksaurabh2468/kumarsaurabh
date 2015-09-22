@@ -8,75 +8,85 @@
 <?php 
 
 $html_content = "";
+$pulls = 0;
 
 $onedayissues = 0;
 $json = 0;
 if($_POST)
 {
+    global $pulls;
+
 	$sevendayissues = 0;
 	$onedayissues = 0;
-	$pulls = 0;
 
 	$data = [];
 	$repository = $_POST['url'];
 	$cnt = 1;
 	$cnt2 = 1;
 	$json = get_web_json("https://api.github.com/repos/" . $repository);
-	$pulls = getpulls( $cnt2 , $repository , $pulls );
-
+	
+    getpulls( $cnt2 , $repository );
+	
 	$total = $json->open_issues_count;
 	getdata($cnt , $repository , $data, $sevendayissues , $onedayissues , $total);
 	//var_dump($data2);
-	
 	//var_dump($json);
 	    
 }
 
 
 
-function getpulls($cnt2 , $repository , $pulls)
+function getpulls($cnt2 , $repository )
 {
 
-	$url = "https://api.github.com/repos/" . $repository . "/pulls?page=" .  $cnt . " &per_page=100";
+    global $pulls;
+	$url = "https://api.github.com/repos/" . $repository . "/pulls?page=" .  $cnt2 . "&per_page=100";
     $objs = get_web_json($url);
 
     $pulls += count($objs);
 
+    //echo count($objs);
+    //var_dump ($objs);
+    //echo $pulls;
     if(count($objs)==100){
 
     	$cnt2 += 1;
-    	getpulls($cnt2 , $repository, $pulls);
+    	getpulls($cnt2 , $repository);
 
     }
     else
+    	{
     	return $pulls;
-
+    	}
 }
 
 
 
-function getdata($cnt , $repository ,  $data , $sevendayissues , $onedayissues ,  $total , $pulls){
+function getdata($cnt , $repository ,  $data , $sevendayissues , $onedayissues ,  $total){
 
+    global $pulls;
+    $cnt2 = 1;
+	
 	//$data = array();
 	$date = strtotime(date('Y-m-d H:i:s')) - 24*7*60*60;
     $date2 = date('c', $date);
     //$date =	$date->format(DateTime::ISO8601);
     //var_dump($date2);	
     
-    $url = "https://api.github.com/repos/" . $repository . "/issues?page=" .  $cnt . "&state=open&since=" . $date2;
+    $url = "https://api.github.com/repos/" . $repository . "/issues?page=" .  $cnt . "&per_page=100&state=open&since=" . $date2;
     $objs = get_web_json($url);
     
     foreach ($objs as $key=>$obj)
     {
-    	$data[$key + ($cnt - 1)*30] = $obj;
+    	$data[$key + ($cnt - 1)*100] = $obj;
     }
     //var_dump($data);
     
    // echo("Success");
-    if(count($objs)==30){
+    if(count($objs)==100){
 
     	$cnt += 1;
-    	getdata($cnt , $repository, $data, $sevendayissues, $onedayissues , $total , $pulls);
+    	getdata($cnt , $repository, $data, $sevendayissues, $onedayissues , $total);
 
     }
     else{
@@ -110,7 +120,7 @@ function getdata($cnt , $repository ,  $data , $sevendayissues , $onedayissues ,
     		<div class="col-md-3" style="text-align:center">
     			<div style="height:150px; width:150px; background-image:url('6.GIF'); text-align:center; padding-top:40px; margin-left:60px">
     			<h2>
-    				<?php echo ( $total - $sevendayissues) ?>
+    				<?php echo ( $total - $sevendayissues - $pulls) ?>
     			</h2></div>
     			<p style="margin-top:10px" ><b>After Seven Days</b></p>
     		</div>
